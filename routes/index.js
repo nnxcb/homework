@@ -120,13 +120,13 @@ router.post('/userinfo/query', function(req, res, next) {
   });
 });
 
-router.post('/product/query', function(req, res, next) {  ///user/query
-  debugger
-  let sql = "select * from t_shop_product where user_id = ?";
-  connection.query(sql, req.body.id, function (err,result) {
-    res.send(result);
-  });
-});
+// router.post('/product/query', function(req, res, next) {  ///user/query
+//   debugger
+//   let sql = "select * from t_shop_product where user_id = ?";
+//   connection.query(sql, req.body.id, function (err,result) {
+//     res.send(result);
+//   });
+// });
 
 router.post('/user/query', function(req, res, next) {
   let b = req.body.pageSize
@@ -170,5 +170,60 @@ router.post('/user/delete', function(req, res, next) {
     res.send(result);
   });
 });
+
+router.post('/product/query', function(req, res, next) {
+  let b = req.body.pageSize
+  let a = (req.body.page - 1) * b
+  let username = req.body.username
+  let addSqlParams = [username, a, b]
+  let sql = "select * from t_shop_product WHERE user_id = (SELECT id from t_system_user where username = ?) limit ?,?";
+  connection.query(sql, addSqlParams, function (err,result) {
+    if (err !== null) {
+      res.send(err)
+      return
+    }
+    for (let i = 0; i < result.length; i++) {
+      result[i].create_time = new Date(result[i].create_time).getTime() + 28800000;
+      result[i].update_time = new Date(result[i].update_time).getTime() + 28800000;
+    }
+    res.send(result);
+  });
+});
+
+router.post('/product/update', function(req, res, next) {
+  let roleInfo = req.body.roleInfo
+  let updateContent = 'Update t_shop_product Set '
+  if (roleInfo.p_name) {
+    updateContent = updateContent + 'p_name = ' + "'"  + roleInfo.p_name + "'" + ','
+  }
+  if (roleInfo.p_price) {
+    updateContent = updateContent + 'p_price = ' + "'" + roleInfo.p_price + "'" + ','
+  }
+  if (roleInfo.p_count) {
+    updateContent = updateContent + 'p_count = ' + "'" + roleInfo.p_count + "'" + ','
+  }
+  if (roleInfo.p_states) {
+    updateContent = updateContent + 'p_states = ' + "'" + roleInfo.p_states + "'" + ','
+  }
+  updateContent = updateContent.slice(0, updateContent.length - 1)
+  updateContent = updateContent + ' Where id = ' + roleInfo.id
+  connection.query(updateContent, function (err,result) {
+    if (err === null) {
+      res.send(result);
+    }
+  });
+});
+
+router.post('/product/delete', function(req, res, next) {
+  let sql = "delete from t_shop_rate where id = ?";
+  connection.query(sql, req.body.id, function (err,result) {
+    for (let i = 0; i < result.length; i++) {
+      result[i].create_time = new Date(result[i].create_time).getTime() + 28800000;
+      result[i].update_time = new Date(result[i].update_time).getTime() + 28800000;
+    }
+    res.send(result);
+  });
+});
+
 
 module.exports = router;
