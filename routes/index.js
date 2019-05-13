@@ -1,7 +1,10 @@
 var express = require('express');
+var multer  = require('multer');
+const fs = require("fs");
 var mysql = require('mysql'); 
 var bodyParser=require("body-parser")
 var router = express.Router();
+var upload = multer({dest:'./public/images/user'}).any()
 var resultData
 var loginResult
 var connection = mysql.createConnection({      //创建mysql实例
@@ -106,7 +109,7 @@ router.post('/get_info', function(req, res, next) {
   let getInfoResult = {}
   getInfoResult.name = req.body.token
   getInfoResult.token = req.body.token
-  getInfoResult.avatar = 'http://localhost:8084/images/' + getInfoResult.name + '.jpg'
+  getInfoResult.avatar = 'http://localhost:8084/images/user/' + getInfoResult.name
   getInfoResult.access = ['zpf']
   res.send(getInfoResult);
 });
@@ -120,14 +123,6 @@ router.post('/userinfo/query', function(req, res, next) {
   });
 });
 
-// router.post('/product/query', function(req, res, next) {  ///user/query
-//   debugger
-//   let sql = "select * from t_shop_product where user_id = ?";
-//   connection.query(sql, req.body.id, function (err,result) {
-//     res.send(result);
-//   });
-// });
-
 router.post('/user/query', function(req, res, next) {
   let b = req.body.pageSize
   let a = (req.body.page - 1) * b
@@ -136,7 +131,9 @@ router.post('/user/query', function(req, res, next) {
   connection.query(sql, addSqlParams, function (err,result) {
     for (let i = 0; i < result.length; i++) {
       result[i].create_time = new Date(result[i].create_time).getTime() + 28800000;
-      result[i].update_time = new Date(result[i].update_time).getTime() + 28800000;
+      if (result[i].update_time) {
+        result[i].update_time = new Date(result[i].update_time).getTime();
+      }
     }
     res.send(result);
   });
@@ -151,6 +148,7 @@ router.post('/user/update', function(req, res, next) {
   if (roleInfo.user_status) {
     updateContent = updateContent + 'user_status = ' + roleInfo.user_status + ','
   }
+  // updateContent = updateContent + 'update_time = ' + new Date()
   updateContent = updateContent.slice(0, updateContent.length - 1)
   updateContent = updateContent + ' Where id = ' + roleInfo.id
   connection.query(updateContent, function (err,result) {
@@ -165,7 +163,7 @@ router.post('/user/delete', function(req, res, next) {
   connection.query(sql, req.body.id, function (err,result) {
     for (let i = 0; i < result.length; i++) {
       result[i].create_time = new Date(result[i].create_time).getTime() + 28800000;
-      result[i].update_time = new Date(result[i].update_time).getTime() + 28800000;
+      result[i].update_time = new Date(result[i].update_time).getTime();
     }
     res.send(result);
   });
@@ -225,5 +223,87 @@ router.post('/product/delete', function(req, res, next) {
   });
 });
 
+router.post('/purchase/record/query', function(req, res, next) {
+  let b = req.body.pageSize
+  let a = (req.body.page - 1) * b
+  let username = req.body.username
+  let addSqlParams = [username]
+  let sql = "select * from t_purchase_record WHERE user_id = any(SELECT id from t_shop_product where user_id = (SELECT id from t_system_user WHERE username = ?))";
+  connection.query(sql, addSqlParams, function (err,result) {
+    if (err !== null) {
+      res.send(err)
+      return
+    }
+    let count = result.length
+    result = result.slice(a, a + b)
+    for (let i = 0; i < result.length; i++) {
+      result[i].buy_time = new Date(result[i].buy_time).getTime() + 28800000;
+    }
+    let returnResult = {
+      result: result,
+      count: count
+    }
+    res.send(returnResult);
+  });
+});
+
+router.post('/users/touxiang', upload, function(req,res,next){
+  var path = req.files[0].path
+  var obj = {
+    touxiang: req.body.files
+  }
+  res.send(path);
+})
+
+router.post('/users/add', upload, function(req,res,next){
+  let fileName = req.body.fileName
+  let uploadData = req.body.uploadData
+  let newFileName = 'public\\images\\user\\' + uploadData.username
+  let queryUsername = "SELECT * FROM t_system_user WHERE username = ?"
+  connection.query(queryUsername, uploadData.username, function (err, result) {
+    if (err) {
+      res.send(err.message)
+    } else {
+      if (result.length === 0) {
+        let username = uploadData.username
+        let password = uploadData.password
+        let shop_name = uploadData.shop_name
+        let user_status = uploadData.fileType
+        let shop_level = 1
+        let addSqlParams = [username, password, shop_name, shop_level, user_status]
+        let addSql = 'INSERT INTO t_system_user (username,password,shop_name,shop_level,user_status) VALUES (?,?,?,?,?)'
+        connection.query(addSql, addSqlParams, function (err, result) {
+          if (err) {
+            return err.message
+          } else {
+            fs.rename(fileName, newFileName, function(err){
+              res.send(newFileName)
+            });
+          }
+        })
+      } else {
+        res.send('1001')
+      }
+    }
+  })
+})
+
+var addData = (req) => {
+  debugger
+  let name = req.body.name
+  let url = req.body.url
+  let alexa = req.body.alexa
+  let country = req.body.country
+  let addSql = 'INSERT INTO websites(Id,name,url,alexa,country) VALUES(0,?,?,?,?)'
+  let addSqlParams = [name, url, alexa, country]
+  // 增
+  connection.query(addSql, addSqlParams, function (err, result) {
+    if (err) {
+      return err.message
+    } else {
+      return 200
+    }
+  })
+}
 
 module.exports = router;
