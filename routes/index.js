@@ -123,6 +123,31 @@ router.post('/userinfo/query', function(req, res, next) {
   });
 });
 
+router.post('/userinfo/update', function(req, res, next) { 
+  let updatePassword = req.body
+  let userName = updatePassword.userName
+  let user = [userName, updatePassword.oldPassword]
+  let passwordSql = 'select * from t_system_user where username = ? && password = ?'
+  connection.query(passwordSql, user, function (err,result) {
+    if (result.length === 1) {
+      let updateContent = 'Update t_system_user Set '
+      if (updatePassword.newPassword) {
+        updateContent = updateContent + 'password = ' + "'"  + updatePassword.newPassword + "'" + ','
+      }
+      // updateContent = updateContent + 'update_time = ' + new Date()
+      updateContent = updateContent.slice(0, updateContent.length - 1)
+      updateContent = updateContent + ' Where username = ' + "'" + updatePassword.userName + "'"
+      connection.query(updateContent, function (err,result) {
+        if (err === null) {
+          res.send('201');
+        }
+      });
+    } else if (result.length === 0) {
+      res.send('501')
+    }
+  });
+});
+
 router.post('/user/query', function(req, res, next) {
   let b = req.body.pageSize
   let a = (req.body.page - 1) * b
@@ -222,6 +247,7 @@ router.post('/product/delete', function(req, res, next) {
     res.send(result);
   });
 });
+
 
 router.post('/purchase/record/query', function(req, res, next) {
   let b = req.body.pageSize
