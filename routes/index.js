@@ -8,11 +8,11 @@ var upload = multer({dest:'./public/images/user'}).any()
 var resultData
 var loginResult
 var connection = mysql.createConnection({      //创建mysql实例
-  host:'localhost',
-  port:'3306',
+  host:'120.77.221.88',
+  port:'3456',
   user:'root',
-  password:'zpf123',
-  database:'homework'
+  password:'123456',
+  database:'zpf'
 });
 connection.connect();
 router.use(bodyParser.urlencoded({ extended: false }))

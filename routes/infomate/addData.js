@@ -7,7 +7,7 @@ let connection = mysql.createConnection({
   host: 'localhost',
   user: 'root',
   password: 'zpf123',
-  port: '3306',
+  port: '3456',
   database: 'test',
   useConnectionPooling: true
 })
