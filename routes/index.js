@@ -109,7 +109,7 @@ router.post('/get_info', function(req, res, next) {
   let getInfoResult = {}
   getInfoResult.name = req.body.token
   getInfoResult.token = req.body.token
-  getInfoResult.avatar = 'http://localhost:8084/images/user/' + getInfoResult.name
+  getInfoResult.avatar = 'http://120.77.221.88:8084/images/user/' + getInfoResult.name
   getInfoResult.access = ['zpf']
   res.send(getInfoResult);
 });
